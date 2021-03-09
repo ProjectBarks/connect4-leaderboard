@@ -24,3 +24,6 @@ class MinimaxAgent(object):
         pass
 
 ```
+
+## License 
+[MIT License](./LICENSE)

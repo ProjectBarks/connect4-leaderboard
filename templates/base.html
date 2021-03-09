@@ -1,0 +1,24 @@
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename= 'fonts/gesta.css') }}">
+
+
+    <title>{% block title %} {% endblock %}</title>
+</head>
+<body>
+<section class="section">
+    <div class="container content" style="max-width: 800px;">
+        {% block content %} {% endblock %}
+    </div>
+</section>
+</div>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="{{ url_for('static', filename= 'scripts/form-v0.0.2.js') }}"></script>
+<link >
+</html>

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} 🔴 Connect Four Leaderboard ⚫ {% endblock %}</h1>
+    <p>Welcome to the connect four leaderboard where the best connect four algorithms are ranked against each other to
+        see who is victorious!</p>
+    <h2>Submissions</h2>
+    <p>Code must be submitted in an exact fashion, anything that deviates from the set requirements will fail and will
+        not be submitted to the leaderboard. Your AI will go up against a randomly intelligent agent and then ranked based off its performance.
+        Please understand the following submission criterion:</p>
+    <ul>
+
+        <li>Submissions that exceed a set timeout (5 minutes) will not be reported.</li>
+        <li>Submit all relevant code including but not limited to
+            <span class="tag is-dark">imports</span>,
+            <span class="tag is-dark">game objects</span>,
+            <span class="tag is-dark">agent objects</span>.
+        </li>
+        <li>The <span class="tag is-dark">agent object</span> must be named <span class="tag is-danger">MinimaxAgent</span>.</li>
+        <li>The <span class="tag is-dark">game object</span> must be named <span class="tag is-danger">Game</span>.</li>
+        <li>Code is executed on a single-core CPU, with 64 MB of memory, and no internet connection.</li>
+    </ul>
+
+    <form id="submission-form">
+        <div class="field">
+            <label class="label">Username</label>
+            <div class="control">
+                <input name="username" class="input" type="text" placeholder="Haxor2020">
+            </div>
+        </div>
+        <div class="field">
+            <label class="label">Full Name</label>
+            <div class="control">
+                <input name="fullname" class="input" type="text" placeholder="Bob Smith">
+            </div>
+        </div>
+        <div class="field">
+            <label class="label">Python Code</label>
+            <textarea id="code" class="textarea" placeholder="Your code e.g. class Agent(object):"></textarea>
+        </div>
+        <div class="field is-grouped is-grouped-right">
+            <p class="control">
+                <button type="submit" id="submit" class="button is-danger">
+                    Submit
+                </button>
+            </p>
+        </div>
+        <progress id="progress" class="progress is-large is-hidden" value="80" max="100">80%</progress>
+        <div id="response"></div>
+    </form>
+    <h2>🏆📈 Leaderboard</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>Rank</th>
+            <th>Username (Full Name)</th>
+            <th class="is-hidden-mobile">Submissions</th>
+            <th>Wins</th>
+            <th class="is-hidden-mobile">Tie</th>
+            <th class="is-hidden-mobile">Losses</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for submission in submissions %}
+            <tr>
+            <td><strong>{{ submission['rank'] }}</strong></td>
+            <td>{{ submission['username'] }} ({{ submission['fullname'] }})</td>
+            <td class="is-hidden-mobile">{{ submission['count'] }}</td>
+            <td><span class="tag is-success">{{ submission['wins'] }}</span></td>
+            <td class="is-hidden-mobile"><span class="tag is-warning">{{ submission['ties'] }}</span></td>
+            <td class="is-hidden-mobile"><span class="tag is-danger">{{ submission['loss'] }}</span></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

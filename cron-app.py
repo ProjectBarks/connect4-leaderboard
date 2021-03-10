@@ -35,23 +35,23 @@ def single_game(players):
     ]
 
 
-def tournament(force=False):
+def tournament(force=False): # TODO: Implement Solving Cache
     def score(wins, ties, loss):
         total = wins + ties + loss
         return 0 if total == 0 else wins / total
     with db_cur() as cur:
-        cur.execute('SELECT username, code FROM users;')
+        cur.execute('SELECT username, code, submissions FROM users;')
         users = cur.fetchall()
 
-        cur.execute('SELECT failed, computed FROM computation_history ORDER BY timestamp DESC LIMIT 1;')
+        cur.execute('SELECT submissions FROM computation_history ORDER BY timestamp DESC LIMIT 1;')
         history = cur.fetchone()
 
-    user_matches = list(combinations(users, 2))
-    if not force and history is not None and (history['failed'] + history['computed']) == len(user_matches):
+    total_submissions = sum(u['submissions'] for u in users)
+    if not force and history is not None and total_submissions == history['submissions']:
         log.info('Aborting! No changes detected.')
         return
 
-
+    user_matches = list(combinations(users, 2))
     results, succeeded, start = {}, 0, time.time()
     for (player, scores) in chain.from_iterable(process_map(single_game, user_matches)):
         past_scores = results.get(player, (0,0,0))
@@ -61,8 +61,8 @@ def tournament(force=False):
     succeeded //= 2
 
     with db_cur() as cur:
-        sql = 'INSERT INTO computation_history (duration, failed, computed) VALUES (%s, %s, %s) RETURNING id'
-        cur.execute(sql, (duration, len(user_matches) - succeeded, succeeded))
+        sql = 'INSERT INTO computation_history (duration, failed, computed, submissions) VALUES (%s, %s, %s, %s) RETURNING id'
+        cur.execute(sql, (duration, len(user_matches) - succeeded, succeeded, total_submissions))
         computation_id = cur.fetchone()['id']
 
     with db_cur() as cur:

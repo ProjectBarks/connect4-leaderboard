@@ -52,6 +52,9 @@ def tournament(force=False):
         return
 
     # TODO - Cache game results from unchanged submissions
+    # If players ABCD have all played each other and a new player E joins.
+    # Only compute the new E matches to avoid unnecessary computation.
+    # Also handle case when player submits new code invaliding old code.
     user_matches = list(combinations(users, 2))
     results, succeeded, start = {}, 0, time.time()
     for (player, scores) in chain.from_iterable(process_map(single_game, user_matches)):

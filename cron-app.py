@@ -35,7 +35,7 @@ def single_game(players):
     ]
 
 
-def tournament(force=False): # TODO: Implement Solving Cache
+def tournament(force=False):
     def score(wins, ties, loss):
         total = wins + ties + loss
         return 0 if total == 0 else wins / total
@@ -51,6 +51,7 @@ def tournament(force=False): # TODO: Implement Solving Cache
         log.info('Aborting! No changes detected.')
         return
 
+    # TODO - Cache game results from unchanged submissions
     user_matches = list(combinations(users, 2))
     results, succeeded, start = {}, 0, time.time()
     for (player, scores) in chain.from_iterable(process_map(single_game, user_matches)):

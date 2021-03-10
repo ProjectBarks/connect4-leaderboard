@@ -90,5 +90,6 @@ if __name__ == '__main__':
         if pycron.is_now(schedule):
             log.info('Running')
             tournament(force=is_forced)
+            time.sleep(60) # Wait 60 Seconds to Stop Trigger
         else:
             time.sleep(15)  # Check again in 15 seconds

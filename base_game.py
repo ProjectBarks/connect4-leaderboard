@@ -1,7 +1,7 @@
-import copy
 from itertools import product
 from random import choice as random_choice
 from abc import abstractmethod
+import copy
 
 class Color(object):
     RED = 'R'
@@ -103,4 +103,6 @@ class RandomShadowAgent(ShadowAgent):
         """Returns a random move"""
         return random_choice(game.possible_moves())
 
-
+# Mask over MinimaxAgent & ShadowGame for use in benchmarking
+MinimaxAgent = RandomShadowAgent
+Game = ShadowGame

@@ -1,24 +1,31 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h1>{% block title %} 🔴 Connect Four Leaderboard ⚫ {% endblock %}</h1>
+    <h1>{% block title %} 🔴 Connect Four Leaderboard ⚫{% endblock %}</h1>
     <p>Welcome to the connect four leaderboard where the best connect four algorithms are ranked against each other to
         see who is victorious!</p>
     <h2>Submissions</h2>
     <p>Code must be submitted in an exact fashion, anything that deviates from the set requirements will fail and will
-        not be submitted to the leaderboard. Your AI will go up against a randomly intelligent agent and then ranked based off its performance.
+        not be submitted to the leaderboard. Your AI will be benchmarked against a random agent in order to be admitted
+        into the leaderboard.
+        Every hour the leaderboard will be recomputed with the most recent rankings of each AI competing against each
+        other.
         Please understand the following submission criterion:</p>
     <ul>
-
-        <li>Submissions that exceed a set timeout (5 minutes) will not be reported.</li>
-        <li>Submit all relevant code including but not limited to
+        <li>Submissions that exceed a set timeout ({{ max_execution_millis // 1000 }} seconds) per game will not be reported.</li>
+        <li>Submit all relevant code, including but not limited to:
             <span class="tag is-dark">imports</span>,
             <span class="tag is-dark">game objects</span>,
             <span class="tag is-dark">agent objects</span>.
         </li>
-        <li>The <span class="tag is-dark">agent object</span> must be named <span class="tag is-danger">MinimaxAgent</span>.</li>
+        <li>The <span class="tag is-dark">agent object</span> must be named <span
+                class="tag is-danger">MinimaxAgent</span>.
+        </li>
         <li>The <span class="tag is-dark">game object</span> must be named <span class="tag is-danger">Game</span>.</li>
-        <li>Code is executed on a single-core CPU, with 64 MB of memory, and no internet connection.</li>
+        <li>Code cannot be larger than {{ max_content_size }} megabyte.</li>
+        <li>Code is executed on a single-core CPU, with {{ container_memory }} MB of memory, and no internet
+            connection.
+        </li>
     </ul>
 
     <form id="submission-form">
@@ -38,6 +45,15 @@
             <label class="label">Python Code</label>
             <textarea id="code" class="textarea" placeholder="Your code e.g. class Agent(object):"></textarea>
         </div>
+        <div class="field">
+            <label class="label">5 Digit Passcode</label>
+            <p class="control has-icons-left">
+                <input name="passcode" class="input" type="number" placeholder="89552">
+                <span class="icon is-small is-left"><i class="fas fa-lock"></i></span>
+            </p>
+            <p class="help"><strong>This code is not secure.</strong> It is merely to prevent others from submitting using your username!</p>
+        </div>
+
         <div class="field is-grouped is-grouped-right">
             <p class="control">
                 <button type="submit" id="submit" class="button is-danger">
@@ -49,6 +65,15 @@
         <div id="response"></div>
     </form>
     <h2>🏆📈 Leaderboard</h2>
+    <div class="columns">
+        <div class="column">
+            <p><strong>Updated:</strong> {{ updated }}</p>
+        </div>
+        <div class="column is-narrow">
+            <p class="m-0"><strong>Recomputes in: </strong> <span id="timer">--:--:--</span></p>
+        </div>
+    </div>
+
     <table>
         <thead>
         <tr>
@@ -63,14 +88,18 @@
         <tbody>
         {% for submission in submissions %}
             <tr>
-            <td><strong>{{ submission['rank'] }}</strong></td>
-            <td>{{ submission['username'] }} ({{ submission['fullname'] }})</td>
-            <td class="is-hidden-mobile">{{ submission['count'] }}</td>
-            <td><span class="tag is-success">{{ submission['wins'] }}</span></td>
-            <td class="is-hidden-mobile"><span class="tag is-warning">{{ submission['ties'] }}</span></td>
-            <td class="is-hidden-mobile"><span class="tag is-danger">{{ submission['loss'] }}</span></td>
-        </tr>
+                <td><strong>{{ submission['rank'] }}</strong></td>
+                <td>{{ submission['username'] }} ({{ submission['fullname'] }})</td>
+                <td class="is-hidden-mobile">{{ submission['submissions'] }}</td>
+                <td><span class="tag is-success">{{ submission['wins'] }}</span></td>
+                <td class="is-hidden-mobile"><span class="tag is-warning">{{ submission['ties'] }}</span></td>
+                <td class="is-hidden-mobile"><span class="tag is-danger">{{ submission['loss'] }}</span></td>
+            </tr>
         {% endfor %}
         </tbody>
     </table>
+    <script>
+        const MAX_EXECUTION = {{ max_execution_millis }};
+        const EXECUTIONS = {{ executions }};
+    </script>
 {% endblock %}

@@ -40,15 +40,6 @@ class ShadowGame(object):
         return [ i for i, x in enumerate(top_row) if x == Color.BLANK ]
 
 
-    def display(self):
-        """Print the game board."""
-        for row in self.grid:
-            for mark in row:
-                print(mark, end='')
-            print()
-        print()
-
-
     def neighbor(self, col, color):
         """Return a Game instance like this one but with a move made into the specified column."""
         if col < 0 or col > len(self.grid[0]):
@@ -73,7 +64,6 @@ class ShadowGame(object):
         for (r0, c0), (r1, c1), (r2, c2), (r3, c3) in ShadowGame.VALID_STATES[(rows, cols)]:
             if self.grid[r0][c0] == Color.BLANK:
                 continue
-            filled_spaces += 1
             if self.grid[r0][c0] == self.grid[r1][c1] == self.grid[r2][c2] == self.grid[r3][c3]:
                 if self.grid[r0][c0] == Color.RED:
                     return float('inf')
@@ -81,6 +71,11 @@ class ShadowGame(object):
                     return float('-inf')
                 raise GameException(f'Invalid color: {self.grid[r0][c0]}')
 
+        filled_spaces = sum(
+            v != Color.BLANK
+            for row in self.grid
+            for v in row
+        )
         return 0 if filled_spaces == cols * rows else None
 
 class ShadowAgent(object):

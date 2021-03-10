@@ -24,7 +24,7 @@ def single_game(players):
     p1, p2 = players
     max_execution = int(os.getenv('MAX_EXECUTION_MILLIS')) * 2  # Double for two AI's
     result = run_benchmark(p1['code'].encode(), p2['code'].encode(),
-                           executions=2, rotate_first_move=False, max_execution_millis=max_execution)
+                           executions=2, rotate_first_move=True, max_execution_millis=max_execution)
 
     if not result['success']:
         return []
@@ -35,7 +35,7 @@ def single_game(players):
     ]
 
 
-def tournament():
+def tournament(force=False):
     def score(wins, ties, loss):
         total = wins + ties + loss
         return 0 if total == 0 else wins / total
@@ -43,7 +43,15 @@ def tournament():
         cur.execute('SELECT username, code FROM users;')
         users = cur.fetchall()
 
+        cur.execute('SELECT failed, computed FROM computation_history ORDER BY timestamp DESC LIMIT 1;')
+        history = cur.fetchone()
+
     user_matches = list(combinations(users, 2))
+    if not force and history is not None and (history['failed'] + history['computed']) == len(user_matches):
+        log.info('Aborting! No changes detected.')
+        return
+
+
     results, succeeded, start = {}, 0, time.time()
     for (player, scores) in chain.from_iterable(process_map(single_game, user_matches)):
         past_scores = results.get(player, (0,0,0))
@@ -64,15 +72,19 @@ def tournament():
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1 and (sys.argv[1] == '--now' or sys.argv[1] == '-n'):
-        tournament()
+    args = set( sys.argv[i].lower() for i in range(1, len(sys.argv)))
+    is_forced = bool(args & { '-f', '--force' })
+
+    if args & { '-n', '--now' }:
+        tournament(force=is_forced)
         sys.exit()
+
 
     schedule = os.getenv('COMPUTE_SCHEDULE')
     log.info('Awaiting next scheduled computation window')
     while True:
         if pycron.is_now(schedule):
             log.info('Running')
-            tournament()
+            tournament(force=is_forced)
         else:
             time.sleep(15)  # Check again in 15 seconds

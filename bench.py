@@ -2,9 +2,11 @@ import os
 from contextlib import contextmanager
 
 import epicbox
+import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+log = logging.getLogger(__name__)
 
 def load_file(file_name):
     root = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -46,7 +48,8 @@ def run_benchmark(player1_code, player2_code, executions, rotate_first_move=Fals
         stats['wins'] = wins
         stats['ties'] = ties
         stats['loss'] = loss
-    print(stats['stdout'].decode())
+    else:
+        log.error(stats['stdout'].decode())
 
     return stats
 

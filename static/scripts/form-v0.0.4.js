@@ -1,8 +1,8 @@
 $(() => {
     const SMOOTHING_FACTOR = 5;
-    const form = $("#submission-form"), code = $("#code"),
-            response = $("#response"), progressBar = $("#progress"),
-            submitButton = form.find("button[type='submit']");
+    const form = $('#submission-form'), code = $('#code'),
+            response = $('#response'), progressBar = $('#progress'),
+            submitButton = form.find('button[type="submit"]');
     const maxProgress = (MAX_EXECUTION / 1000) * EXECUTIONS * SMOOTHING_FACTOR;
 
     var progress = 0, timer = null;
@@ -46,12 +46,11 @@ $(() => {
 
 
     const recomputeTimer = $('#timer');
-    var countDownDate = ceilHourDate();
+    var countDownDate = nextTime();
 
-    function ceilHourDate() {
-        const date = new Date();
-        const p = 60 * 60 * 1000; 
-        return new Date(Math.ceil(date.getTime() / p ) * p);
+    function nextTime() {
+        const cron = cronSchedule.parseCronExpression(COMPUTE_SCHEDULE)
+        return cron.getNextDate(new Date(Date.now()));
     }
 
     function pad(n, width, z) {
@@ -65,7 +64,7 @@ $(() => {
         const timeleft = countDownDate - now;
 
         if (timeleft < 0)
-            countDownDate = ceilHourDate();
+            countDownDate = nextTime();
             
         const hours = Math.floor((timeleft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((timeleft % (1000 * 60 * 60)) / (1000 * 60));

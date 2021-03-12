@@ -95,6 +95,8 @@ def index():
         row['rank'] = i
         row['username'] = row['username'].strip()
         row['fullname'] = row['fullname'].strip()
+
+    print(os.getenv('COMPUTE_SCHEDULE'))
     return render_template(
         'index.html',
         submissions=submissions,
@@ -102,5 +104,6 @@ def index():
         max_execution_millis=int(os.getenv('MAX_EXECUTION_MILLIS')),
         executions=int(os.getenv('BENCHMARK_EXECUTIONS')),
         container_memory=int(os.getenv('CONTAINER_MEMORY_MB')),
-        updated=computation['timestamp'] if computation else 'Awaiting First Update'
+        updated=computation['timestamp'] if computation else 'Awaiting First Update',
+        compute_schedule=os.getenv('COMPUTE_SCHEDULE')
     )

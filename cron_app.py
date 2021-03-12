@@ -13,7 +13,7 @@ from psycopg2.extras import execute_batch
 from bench import run_benchmark, db_cur
 
 load_dotenv()
-log = logging.getLogger('cron-app')
+log = logging.getLogger('cron_app')
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
     level=os.environ.get('LOGLEVEL', 'INFO'),

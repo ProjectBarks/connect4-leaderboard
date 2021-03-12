@@ -96,7 +96,6 @@ def index():
         row['username'] = row['username'].strip()
         row['fullname'] = row['fullname'].strip()
 
-    print(os.getenv('COMPUTE_SCHEDULE'))
     return render_template(
         'index.html',
         submissions=submissions,

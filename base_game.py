@@ -42,7 +42,7 @@ class ShadowGame(object):
 
     def neighbor(self, col, color):
         """Return a Game instance like this one but with a move made into the specified column."""
-        if col < 0 or col > len(self.grid[0]):
+        if col <= -1 or col >= len(self.grid[0]):
             raise GameException(f'Invalid column index: {col}')
         if color != Color.RED and color != Color.BLACK:
             raise GameException(f'Invalid color: {color}')

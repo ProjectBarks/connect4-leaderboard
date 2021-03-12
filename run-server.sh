@@ -1,2 +1,4 @@
 #!/usr/bin/env bash
-gunicorn -t 600 -w 10  -b 192.168.0.223:5000 app:app
+ip_addr=$(ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p')
+echo $ip_addr
+gunicorn -t 600 -w 10 -b $ip_addr:5000 app:app

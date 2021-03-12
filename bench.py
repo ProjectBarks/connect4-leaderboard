@@ -57,7 +57,7 @@ def run_benchmark(player1_code, player2_code, executions, rotate_first_move=Fals
 @contextmanager
 def db_cur():
     with psycopg2.connect(database=os.getenv('DATABASE_NAME'),
-                          user=os.getenv('DATABASE_NAME'),
+                          user=os.getenv('DATABASE_USER'),
                           password=os.getenv('DATABASE_PASSWORD'),
                           host=os.getenv('DATABASE_HOST'),
                           port=os.getenv('DATABASE_PORT'),

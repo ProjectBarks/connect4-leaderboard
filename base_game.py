@@ -6,7 +6,7 @@ import copy
 class Color(object):
     RED = 'R'
     BLACK = 'B'
-    BLANK = '-'
+    EMPTY = '-'
 
 class GameException(Exception):
     pass
@@ -37,7 +37,7 @@ class ShadowGame(object):
     def possible_moves(self):
         """Return a list of possible moves given the current board."""
         top_row = self.grid[0]
-        return [ i for i, x in enumerate(top_row) if x == Color.BLANK ]
+        return [i for i, x in enumerate(top_row) if x == Color.EMPTY]
 
 
     def neighbor(self, col, color):
@@ -47,13 +47,13 @@ class ShadowGame(object):
         if color != Color.RED and color != Color.BLACK:
             raise GameException(f'Invalid color: {color}')
         r, nxt_game = len(self.grid) // 2, ShadowGame(self.grid)
-        if self.grid[r][col] == Color.BLANK:
-            while r + 1 < len(self.grid) and nxt_game.grid[r + 1][col] == Color.BLANK:
+        if self.grid[r][col] == Color.EMPTY:
+            while r + 1 < len(self.grid) and nxt_game.grid[r + 1][col] == Color.EMPTY:
                 r += 1
         else:
-            while r - 1 > -1 and nxt_game.grid[r][col] != Color.BLANK:
+            while r - 1 > -1 and nxt_game.grid[r][col] != Color.EMPTY:
                 r -= 1
-        if nxt_game.grid[r][col] != Color.BLANK:
+        if nxt_game.grid[r][col] != Color.EMPTY:
             raise GameException(f'Invalid Position - Col: {col}')
         nxt_game.grid[r][col] = color
         return nxt_game
@@ -62,7 +62,7 @@ class ShadowGame(object):
     def winning_state(self):
         rows, cols, filled_spaces = len(self.grid), len(self.grid[0]), 0
         for (r0, c0), (r1, c1), (r2, c2), (r3, c3) in ShadowGame.VALID_STATES[(rows, cols)]:
-            if self.grid[r0][c0] == Color.BLANK:
+            if self.grid[r0][c0] == Color.EMPTY:
                 continue
             if self.grid[r0][c0] == self.grid[r1][c1] == self.grid[r2][c2] == self.grid[r3][c3]:
                 if self.grid[r0][c0] == Color.RED:
@@ -72,7 +72,7 @@ class ShadowGame(object):
                 raise GameException(f'Invalid color: {self.grid[r0][c0]}')
 
         filled_spaces = sum(
-            v != Color.BLANK
+            v != Color.EMPTY
             for row in self.grid
             for v in row
         )

@@ -39,5 +39,13 @@ class MinimaxAgent(object):
 
 ```
 
+## Todo
+- [ ] **Add Match Cache** - When recomputing the matches check which users have increased their submission count and only
+                            redo matches for those players. This would not dramatically decrease computation but could be
+                            substantial in cases where only one or two players are modifying their code between execution. 
+- [ ] **Dojo** - Allow players who submit their code to run in a 1v1 fashion playing back the results in realtime with a
+                 dramatic effect. It could also permit benchmarking against competitive agents before a total re-computation.
+              
+
 ## License 
 [MIT License](./LICENSE)

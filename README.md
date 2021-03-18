@@ -53,6 +53,7 @@ class MinimaxAgent(object):
                         agent who took less time.
 - [ ] **Duration Ordering** - Agents with identical win rates should be ordered by least amount of time taken to win as a
                               secondary sort component. 
-
+- [ ] **Upload Files** - Code must be submitted in plain text but it users should be allowed to upload files instead.
+  
 ## License 
 [MIT License](./LICENSE)

@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-python3 cron_app.py
+python3 cron_app.py "$@"

@@ -14,17 +14,16 @@ def load_file(file_name):
         return '\n'.join(t.readlines())
 
 
-def run_benchmark(player1_code, player2_code, executions, rotate_first_move=False, base_files=None, max_execution_millis=None):
+def run_benchmark(player1_code, player2_code, executions, max_execution_millis=None, rotate_first_move=False, base_files=None):
     if not base_files: base_files = ['benchmark.py', 'base_game.py']
-    if not max_execution_millis: max_execution_millis = int(os.getenv('MAX_EXECUTION_MILLIS'))
     memory_mb = int(os.getenv('CONTAINER_MEMORY_MB'))
     container_img = os.getenv('CONTAINER_IMAGE')
 
     epicbox.configure( profiles=[ epicbox.Profile('python', container_img) ] )
 
     limits = {
-        'cputime': (executions *  max_execution_millis) // 1000,
-        'realtime': (executions *  max_execution_millis) // 1000,
+        'cputime': (executions * max_execution_millis) // 1000,
+        'realtime': (executions * max_execution_millis) // 1000,
         'memory': memory_mb
     }
     files = [

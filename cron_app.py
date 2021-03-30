@@ -22,12 +22,21 @@ logging.basicConfig(
 
 def single_game(players):
     p1, p2 = players
-    max_execution = int(os.getenv('MAX_EXECUTION_MILLIS')) * 2  # Double for two AI's
+    executions = int(os.getenv('MATCH_EXECUTIONS'))
+
     result = run_benchmark(p1['code'].encode(), p2['code'].encode(),
-                           executions=2, rotate_first_move=True, max_execution_millis=max_execution)
+                           executions=executions,
+                           rotate_first_move=True,
+                           max_execution_millis=int(os.getenv('MAX_EXECUTION_MILLIS')) * 2  # Double for two AI's
+            )
 
     if not result['success']:
-        return []
+        # Errors or timeouts are considered ties
+        # This is the best response to the halting problem and reflects how ties are handled in chess
+        return [
+            (p1['username'], (0, executions, 0)),
+            (p2['username'], (0, executions, 0))
+        ]
 
     return [
         (p1['username'], (result['wins'], result['ties'], result['loss'])),
@@ -58,7 +67,7 @@ def tournament(force=False):
     user_matches = list(combinations(users, 2))
     results, succeeded, start = {}, 0, time.time()
     for (player, scores) in chain.from_iterable(process_map(single_game, user_matches)):
-        past_scores = results.get(player, (0,0,0))
+        past_scores = results.get(player, (0, 0, 0))
         results[player] = tuple(map(add, scores, past_scores))
         succeeded += 1
     duration = int(time.time() - start)

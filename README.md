@@ -47,13 +47,15 @@ class MinimaxAgent(object):
                  dramatic effect. It could also permit benchmarking against competitive agents before a total re-computation.
 - [ ] **Hash Passcodes** - The fact passcodes are not encrypted right now is a huge security risk. All passcodes
                             should be encrypted and a bash script should be created to reset passcodes. 
-- [ ] **Game Limits** - There is the possibility for a player to capitalize on the time and memory against the other agent.
+- [x] **Game Limits** - ~~There is the possibility for a player to capitalize on the time and memory against the other agent.
                         To create fair play both players should be in their own docker instances with shared communication.
                         The simplest current addition to the existing infrastructure would be to give an instant win to the 
-                        agent who took less time.
+                        agent who took less time.~~ Cannot give an immediate win due to the halting problem.
 - [ ] **Duration Ordering** - Agents with identical win rates should be ordered by least amount of time taken to win as a
                               secondary sort component. 
 - [ ] **Upload Files** - Code must be submitted in plain text but it users should be allowed to upload files instead.
-  
+- [ ] **Elo Rating System** - A potential alternative to match cache is using the Elo rating system for rankings.
+
+
 ## License 
 [MIT License](./LICENSE)

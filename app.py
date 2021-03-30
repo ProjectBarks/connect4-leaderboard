@@ -26,7 +26,7 @@ def error(title='Error!', **kwargs):
 def run():
     cl, args = request.content_length, request.args
     username, fullname, passcode = args.get('username', '').lower(), args.get('fullname', '').title(), args.get('passcode', '')
-    execs, cl_max = int(os.getenv('BENCHMARK_EXECUTIONS')), int(os.getenv('MAX_CONTENT_SIZE_MB'))
+    cl_max = int(os.getenv('MAX_CONTENT_SIZE_MB'))
     # Username
     if len(username) <= 5: return warn_input(message='Username must be longer than 5 characters!')
     if len(username) >= 50: return warn_input(message='Username must be longer shorter than 50 characters.')
@@ -50,7 +50,10 @@ def run():
 
 
     code = request.get_data()
-    stats = run_benchmark(code, load_file('base_game.py').encode(), executions=execs)
+    stats = run_benchmark(code, load_file('base_game.py').encode(),
+        executions=int(os.getenv('BENCHMARK_EXECUTIONS')),
+        max_execution_millis=os.getenv('MAX_EXECUTION_MILLIS')
+    )
     std_error = error(message=f'Unknown error \n{stats["stdout"].decode()} \n{stats["stderr"].decode()}')
     if stats['success']:
         wins, ties, loss, duration = stats['wins'], stats['ties'], stats['loss'], stats['duration']

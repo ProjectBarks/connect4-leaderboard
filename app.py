@@ -52,7 +52,7 @@ def run():
     code = request.get_data()
     stats = run_benchmark(code, load_file('base_game.py').encode(),
         executions=int(os.getenv('BENCHMARK_EXECUTIONS')),
-        max_execution_millis=os.getenv('MAX_EXECUTION_MILLIS')
+        max_execution_millis=int(os.getenv('MAX_EXECUTION_MILLIS'))
     )
     std_error = error(message=f'Unknown error \n{stats["stdout"].decode()} \n{stats["stderr"].decode()}')
     if stats['success']:

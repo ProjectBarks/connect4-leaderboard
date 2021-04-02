@@ -65,7 +65,7 @@ $(() => {
 
         if (timeleft < 0) {
             countDownDate = nextTime();
-            location.reload()
+            location.reload();
         }
             
         const hours = Math.floor((timeleft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));

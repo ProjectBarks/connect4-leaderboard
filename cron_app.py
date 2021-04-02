@@ -3,10 +3,11 @@ import sys
 import time
 import logging
 from operator import add
+from multiprocessing import Pool
 from itertools import combinations, chain
 
 import pycron
-from tqdm.contrib.concurrent import process_map
+from tqdm import tqdm
 from dotenv import load_dotenv
 from psycopg2.extras import execute_batch
 
@@ -66,10 +67,12 @@ def tournament(force=False):
     # Also handle case when player submits new code invaliding old code.
     user_matches = list(combinations(users, 2))
     results, succeeded, start = {}, 0, time.time()
-    for (player, scores) in chain.from_iterable(process_map(single_game, user_matches)):
-        past_scores = results.get(player, (0, 0, 0))
-        results[player] = tuple(map(add, scores, past_scores))
-        succeeded += 1
+    with Pool() as pool:
+        stream = tqdm(pool.imap_unordered(single_game, user_matches), total=len(user_matches))
+        for (player, scores) in chain.from_iterable(stream):
+            past_scores = results.get(player, (0, 0, 0))
+            results[player] = tuple(map(add, scores, past_scores))
+            succeeded += 1
     duration = int(time.time() - start)
     succeeded //= 2
 

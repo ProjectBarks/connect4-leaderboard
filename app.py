@@ -1,7 +1,9 @@
 import re, os
+import logging
+import traceback
 from operator import itemgetter
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, abort, Response
 from dotenv import load_dotenv
 
 from bench import load_file, run_benchmark, db_cur
@@ -9,17 +11,27 @@ from bench import load_file, run_benchmark, db_cur
 load_dotenv()
 app = Flask(__name__)
 
+if __name__ != '__main__':
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
+    log = gunicorn_logger
+
+log = app.logger
+
 
 def notify(**kwargs):
     return render_template('notify.html', level='success', **kwargs)
 
 
-def warn_input(**kwargs):
-    return render_template('notify.html', title='Invalid Input!', level='warning', **kwargs)
+def warn_input(username, **kwargs):
+    log.info(f'{username} - {kwargs["message"]}')
+    abort(Response(render_template('notify.html', title='Invalid Input!', level='warning', **kwargs)))
 
 
-def error(title='Error!', **kwargs):
-    return render_template('notify.html', title=title, level='danger', **kwargs)
+def error(username, title='Error!', **kwargs):
+    log.warning(f'{username} - {kwargs["message"]}')
+    abort(Response(render_template('notify.html', title=title, level='danger', **kwargs)))
 
 
 @app.route('/run', methods=('POST',))
@@ -27,21 +39,23 @@ def run():
     cl, args = request.content_length, request.args
     username, fullname, passcode = args.get('username', '').lower(), args.get('fullname', '').title(), args.get('passcode', '')
     cl_max = int(os.getenv('MAX_CONTENT_SIZE_MB'))
+
     # Username
-    if len(username) <= 5: return warn_input(message='Username must be longer than 5 characters!')
-    if len(username) >= 50: return warn_input(message='Username must be longer shorter than 50 characters.')
-    if not username.isalnum(): return warn_input(message='Username must be alphanumeric only!')
+    log.info(f'{username} atttempting submission.')
+    if len(username) <= 5: warn_input(username=username, message='Username must be longer than 5 characters!')
+    if len(username) >= 50: warn_input(username=username, message='Username must be longer shorter than 50 characters.')
+    if not username.isalnum(): warn_input(username=username, message='Username must be alphanumeric only!')
     # Name
-    if len(fullname) <= 5: return warn_input(message='Name must be longer than 5 characters!')
-    if len(fullname) >= 100: return warn_input(message='Name must be shorter than 100 characters!')
-    if not re.match('^[a-zA-Z0-9 ]+$', fullname):  return warn_input(message='Full name must be alphanumeric only!')
+    if len(fullname) <= 5: warn_input(username=username, message='Name must be longer than 5 characters!')
+    if len(fullname) >= 100: warn_input(username=username, message='Name must be shorter than 100 characters!')
+    if not re.match('^[a-zA-Z0-9 ]+$', fullname): return warn_input(username=username, message='Full name must be alphanumeric only!')
     # Code
-    if cl is None or cl <= 0: return warn_input(message='No code submitted!')
-    if cl > cl_max * 1024 * 1024: return warn_input(message=f'Code must not be larger than {cl_max}MB!')
+    if cl is None or cl <= 0: warn_input(username=username, message='No code submitted!')
+    if cl > cl_max * 1024 * 1024: warn_input(username=username, message=f'Code must not be larger than {cl_max}MB!')
     # Passcode
-    if len(passcode) < 5: return warn_input(message='5-Digit code is required!')
-    if len(passcode) > 10: return warn_input(message='5-Digit code cannot be longer than 10 digits!')
-    if not passcode.isnumeric(): return warn_input(message='5-Digit code must be numeric only!')
+    if len(passcode) < 5: warn_input(username=username, message='5-Digit code is required!')
+    if len(passcode) > 10: warn_input(username=username, message='5-Digit code cannot be longer than 10 digits!')
+    if not passcode.isnumeric(): warn_input(username=username, message='5-Digit code must be numeric only!')
 
     with db_cur() as cur:
         cur.execute('select passcode from users where username = %s;', (username,))
@@ -49,30 +63,36 @@ def run():
         if user is not None and user['passcode'] != passcode: return warn_input(message='Incorrect passcode! Try again.')
 
 
-    code = request.get_data()
-    stats = run_benchmark(code, load_file('base_game.py').encode(),
-        executions=int(os.getenv('BENCHMARK_EXECUTIONS')),
-        max_execution_millis=int(os.getenv('MAX_EXECUTION_MILLIS'))
-    )
-    std_error = error(message=f'Unknown error \n{stats["stdout"].decode()} \n{stats["stderr"].decode()}')
-    if stats['success']:
-        wins, ties, loss, duration = stats['wins'], stats['ties'], stats['loss'], stats['duration']
-        with db_cur() as cur:
-            if user is None:
-                sql = 'INSERT INTO users (username, passcode, code, fullname) VALUES (%s,%s,%s,%s)'
-                cur.execute(sql, (username, passcode, request.get_data().decode(), fullname))
-            else:
-                sql = '''UPDATE users 
-                         SET submissions = submissions + 1,
-                             code = %s
-                         WHERE username = %s;'''
-                cur.execute(sql, (code.decode(), username))
-        return notify(title='Leaderboard Submission Success!',  message=f'Wins: {wins}, Ties: {ties}, Loss: {loss}, Duration: {duration}')
-    elif stats['timeout']:
-        return error(title='Execution Error!', message=f'Execution did not complete before timeout. Please optimize code '
-                                                      'before re-submitting.')
-    else:
-        return std_error
+    try:
+        code = request.get_data()
+        stats = run_benchmark(code, load_file('base_game.py').encode(),
+            executions=int(os.getenv('BENCHMARK_EXECUTIONS')),
+            max_execution_millis=int(os.getenv('MAX_EXECUTION_MILLIS'))
+        )
+
+        if stats['success']:
+            wins, ties, loss, duration = stats['wins'], stats['ties'], stats['loss'], stats['duration']
+            with db_cur() as cur:
+                if user is None:
+                    sql = 'INSERT INTO users (username, passcode, code, fullname) VALUES (%s,%s,%s,%s)'
+                    cur.execute(sql, (username, passcode, request.get_data().decode(), fullname))
+                else:
+                    sql = '''UPDATE users 
+                             SET submissions = submissions + 1,
+                                 code = %s
+                             WHERE username = %s;'''
+                    cur.execute(sql, (code.decode(), username))
+            log.info(f'{username} - {wins} {ties} {loss}')
+            return notify(title='Leaderboard Submission Success!',  message=f'Wins: {wins}, Ties: {ties}, Loss: {loss}, Duration: {duration}')
+        elif stats['timeout']:
+            error(username=username, title='Execution Error!', message=f'Execution did not complete before timeout. Please optimize code '
+                                                          'before re-submitting.')
+        else:
+            error(username=username, message=f'Unknown error \n{stats["stdout"].decode()} \n{stats["stderr"].decode()}')
+    except:
+        traceback.print_exc()
+        error(username=username, message=f'Server Error')
+
 
 
 @app.route('/')

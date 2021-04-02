@@ -70,25 +70,26 @@ def run():
             max_execution_millis=int(os.getenv('MAX_EXECUTION_MILLIS'))
         )
 
-        if stats['success']:
-            wins, ties, loss, duration = stats['wins'], stats['ties'], stats['loss'], stats['duration']
-            with db_cur() as cur:
-                if user is None:
-                    sql = 'INSERT INTO users (username, passcode, code, fullname) VALUES (%s,%s,%s,%s)'
-                    cur.execute(sql, (username, passcode, request.get_data().decode(), fullname))
-                else:
-                    sql = '''UPDATE users 
-                             SET submissions = submissions + 1,
-                                 code = %s
-                             WHERE username = %s;'''
-                    cur.execute(sql, (code.decode(), username))
-            log.info(f'{username} - {wins} {ties} {loss}')
-            return notify(title='Leaderboard Submission Success!',  message=f'Wins: {wins}, Ties: {ties}, Loss: {loss}, Duration: {duration}')
-        elif stats['timeout']:
-            error(username=username, title='Execution Error!', message=f'Execution did not complete before timeout. Please optimize code '
-                                                          'before re-submitting.')
-        else:
-            error(username=username, message=f'Unknown error \n{stats["stdout"].decode()} \n{stats["stderr"].decode()}')
+        if not stats['success']:
+            if stats['timeout']:
+                error(username=username, title='Execution Error!', message=f'Execution did not complete before timeout. Please optimize code '
+                                                                            'before re-submitting.')
+            else:
+                error(username=username, message=f'Unknown error \n{stats["stdout"].decode()} \n{stats["stderr"].decode()}')
+
+        wins, ties, loss, duration = stats['wins'], stats['ties'], stats['loss'], stats['duration']
+        with db_cur() as cur:
+            if user is None:
+                sql = 'INSERT INTO users (username, passcode, code, fullname) VALUES (%s,%s,%s,%s)'
+                cur.execute(sql, (username, passcode, request.get_data().decode(), fullname))
+            else:
+                sql = '''UPDATE users 
+                         SET submissions = submissions + 1,
+                             code = %s
+                         WHERE username = %s;'''
+                cur.execute(sql, (code.decode(), username))
+        log.info(f'{username} - {wins} {ties} {loss}')
+        return notify(title='Leaderboard Submission Success!',  message=f'Wins: {wins}, Ties: {ties}, Loss: {loss}, Duration: {duration}')
     except:
         traceback.print_exc()
         error(username=username, message=f'Server Error')

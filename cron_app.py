@@ -23,32 +23,35 @@ logging.basicConfig(
 
 def single_game(players):
     p1, p2 = players
-    executions = int(os.getenv('MATCH_EXECUTIONS'))
+    executions, max_time= int(os.getenv('MATCH_EXECUTIONS')), int(os.getenv('MAX_EXECUTION_MILLIS'))
 
     result = run_benchmark(p1['code'].encode(), p2['code'].encode(),
                            executions=executions,
                            rotate_first_move=True,
-                           max_execution_millis=int(os.getenv('MAX_EXECUTION_MILLIS')) * 2  # Double for two AI's
+                           max_execution_millis=max_time * 2  # Double for two AI's
             )
 
     if not result['success']:
         # Errors or timeouts are considered ties
         # This is the best response to the halting problem and reflects how ties are handled in chess
-        return [
-            (p1['username'], (0, executions, 0)),
-            (p2['username'], (0, executions, 0))
-        ]
+        result['wins'] = result['loss'] = 0
+        result['ties'] = executions
+
+    # TODO: Split duration per player to make the time independent of agent-filibuster
+    result['duration'] = max_time / 1000 if result['timeout'] else result['duration']
 
     return [
-        (p1['username'], (result['wins'], result['ties'], result['loss'])),
-        (p2['username'], (result['loss'], result['ties'], result['wins']))
+        (p1['username'], (result['duration'], result['wins'], result['ties'], result['loss'])),
+        (p2['username'], (result['duration'], result['loss'], result['ties'], result['wins']))
     ]
 
 
 def tournament(force=False):
-    def score(wins, ties, loss):
+    def score(entry):
+        wins, ties, loss = entry[-3:]
         total = wins + ties + loss
         return 0 if total == 0 else wins / total
+
     with db_cur() as cur:
         cur.execute('SELECT username, code, submissions FROM users;')
         users = cur.fetchall()
@@ -66,24 +69,24 @@ def tournament(force=False):
     # Only compute the new E matches to avoid unnecessary computation.
     # Also handle case when player submits new code invaliding old code.
     user_matches = list(combinations(users, 2))
-    results, succeeded, start = {}, 0, time.time()
+    results, computed, start = {}, 0, time.time()
     with Pool() as pool:
         stream = tqdm(pool.imap_unordered(single_game, user_matches), total=len(user_matches))
         for (player, scores) in chain.from_iterable(stream):
-            past_scores = results.get(player, (0, 0, 0))
-            results[player] = tuple(map(add, scores, past_scores))
-            succeeded += 1
+            past_entry = results.get(player, (0, 0, 0, 0))
+            results[player] = tuple(map(add, scores, past_entry))
+            computed += 1
     duration = int(time.time() - start)
-    succeeded //= 2
+    computed //= 2
 
     with db_cur() as cur:
-        sql = 'INSERT INTO computation_history (duration, failed, computed, submissions) VALUES (%s, %s, %s, %s) RETURNING id'
-        cur.execute(sql, (duration, len(user_matches) - succeeded, succeeded, total_submissions))
+        sql = 'INSERT INTO computation_history (duration, computed, submissions) VALUES (%s, %s, %s) RETURNING id'
+        cur.execute(sql, (duration, computed, total_submissions))
         computation_id = cur.fetchone()['id']
 
     with db_cur() as cur:
-        sql = 'INSERT INTO results (username, computation_ID, wins, ties, loss, score) VALUES (%s, %s, %s, %s, %s, %s)'
-        query_var_iter = ((username, computation_id, *scores, score(*scores)) for username, scores in results.items())
+        sql = 'INSERT INTO results (username, computation_ID, duration, wins, ties, loss, score) VALUES (%s, %s, %s, %s, %s, %s, %s)'
+        query_var_iter = ((username, computation_id, *entry, score(entry)) for username, entry in results.items())
         execute_batch(cur, sql, query_var_iter)
 
 

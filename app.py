@@ -5,6 +5,7 @@ from operator import itemgetter
 
 from flask import Flask, render_template, request, abort, Response
 from dotenv import load_dotenv
+from werkzeug.exceptions import HTTPException
 
 from bench import load_file, run_benchmark, db_cur
 
@@ -18,7 +19,6 @@ if __name__ != '__main__':
     log = gunicorn_logger
 
 log = app.logger
-
 
 def notify(**kwargs):
     return render_template('notify.html', level='success', **kwargs)
@@ -42,6 +42,7 @@ def run():
 
     # Username
     log.info(f'{username} atttempting submission.')
+    code = request.get_data() # Must read the upload in to return an error. Unsure why.
     if len(username) <= 5: warn_input(username=username, message='Username must be longer than 5 characters!')
     if len(username) >= 50: warn_input(username=username, message='Username must be longer shorter than 50 characters.')
     if not username.isalnum(): warn_input(username=username, message='Username must be alphanumeric only!')
@@ -63,36 +64,31 @@ def run():
         if user is not None and user['passcode'] != passcode: return warn_input(message='Incorrect passcode! Try again.')
 
 
-    try:
-        code = request.get_data()
-        stats = run_benchmark(code, load_file('base_game.py').encode(),
-            executions=int(os.getenv('BENCHMARK_EXECUTIONS')),
-            max_execution_millis=int(os.getenv('MAX_EXECUTION_MILLIS'))
-        )
+    stats = run_benchmark(code, load_file('base_game.py').encode(),
+        executions=int(os.getenv('BENCHMARK_EXECUTIONS')),
+        max_execution_millis=int(os.getenv('MAX_EXECUTION_MILLIS'))
+    )
 
-        if not stats['success']:
-            if stats['timeout']:
-                error(username=username, title='Execution Error!', message=f'Execution did not complete before timeout. Please optimize code '
-                                                                            'before re-submitting.')
-            else:
-                error(username=username, message=f'Unknown error \n{stats["stdout"].decode()} \n{stats["stderr"].decode()}')
+    if not stats['success']:
+        if stats['timeout']:
+            error(username=username, title='Execution Error!', message=f'Execution did not complete before timeout. Please optimize code '
+                                                                        'before re-submitting.')
+        else:
+            error(username=username, message=f'Unknown error \n{stats["stdout"].decode()} \n{stats["stderr"].decode()}')
 
-        wins, ties, loss, duration = stats['wins'], stats['ties'], stats['loss'], stats['duration']
-        with db_cur() as cur:
-            if user is None:
-                sql = 'INSERT INTO users (username, passcode, code, fullname) VALUES (%s,%s,%s,%s)'
-                cur.execute(sql, (username, passcode, request.get_data().decode(), fullname))
-            else:
-                sql = '''UPDATE users 
-                         SET submissions = submissions + 1,
-                             code = %s
-                         WHERE username = %s;'''
-                cur.execute(sql, (code.decode(), username))
-        log.info(f'{username} - {wins} {ties} {loss}')
-        return notify(title='Leaderboard Submission Success!',  message=f'Wins: {wins}, Ties: {ties}, Loss: {loss}, Duration: {duration}')
-    except:
-        traceback.print_exc()
-        error(username=username, message=f'Server Error')
+    wins, ties, loss, duration = stats['wins'], stats['ties'], stats['loss'], stats['duration']
+    with db_cur() as cur:
+        if user is None:
+            sql = 'INSERT INTO users (username, passcode, code, fullname) VALUES (%s,%s,%s,%s)'
+            cur.execute(sql, (username, passcode, request.get_data().decode(), fullname))
+        else:
+            sql = '''UPDATE users 
+                     SET submissions = submissions + 1,
+                         code = %s
+                     WHERE username = %s;'''
+            cur.execute(sql, (code.decode(), username))
+    log.info(f'{username} - {wins} {ties} {loss}')
+    return notify(title='Leaderboard Submission Success!',  message=f'Wins: {wins}, Ties: {ties}, Loss: {loss}, Duration: {duration}')
 
 
 
@@ -104,11 +100,11 @@ def index():
 
         if computation is not None:
             sql = '''
-                SELECT r.username, r.wins, r.ties, r.loss, r.score, u.fullname, u.submissions
+                SELECT r.username, r.wins, r.ties, r.loss, r.score, u.fullname, u.submissions, (duration / (r.wins + r.ties + r.loss)) as avg_duration
                 FROM results r
                 LEFT JOIN users u on u.username = r.username
                 WHERE computation_id = %s
-                ORDER BY score DESC
+                ORDER BY score DESC, duration ASC
             '''
             cur.execute(sql, (computation['id'],))
             submissions = list(sorted((dict(row) for row in cur.fetchall()), reverse=True, key=itemgetter('score')))

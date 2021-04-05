@@ -9,10 +9,10 @@
         not be submitted to the leaderboard. Your AI will be benchmarked against a random agent in order to be admitted
         into the leaderboard.
         Every hour the leaderboard will be recomputed with the most recent rankings of each AI competing against each
-        other.
+        other. Rankings are ordered by <em>win rate over total games</em> and sorted secondarily on <em>duration</em>. 
         Please understand the following submission criterion:</p>
     <ul>
-        <li>Submissions that exceed a set timeout ({{ max_execution_millis // 1000 }} seconds) per game will not be reported.</li>
+        <li>Submissions that exceed a set timeout ({{ max_execution_millis // 1000 }} seconds) per game admitted to the leaderboard.</li>
         <li>Submit all relevant code, including but not limited to:
             <span class="tag is-dark">imports</span>,
             <span class="tag is-dark">game objects</span>,
@@ -23,9 +23,7 @@
         </li>
         <li>The <span class="tag is-dark">game object</span> must be named <span class="tag is-danger">Game</span>.</li>
         <li>Code cannot be larger than {{ max_content_size }} MB.</li>
-        <li>Code is executed on a single-core CPU, with {{ container_memory }} MB of memory, and no internet
-            connection.
-        </li>
+        <li>Code is executed on a single-core CPU, with {{ container_memory }} MB of memory, and no internet connection.</li>
         <li>Errors and timeouts are reported as ties regardless of the responsible player.</li>
     </ul>
 
@@ -77,21 +75,43 @@
 
     <table>
         <thead>
-        <tr>
+        <tr class="sticky has-background-white">
             <th>Rank</th>
             <th>Username (Full Name)</th>
-            <th class="is-hidden-mobile">Submissions</th>
+            <th class="is-hidden-touch">Submissions</th>
+            <th class="is-hidden-mobile">
+                <span class="has-tooltip-arrow" data-tooltip="Average Duration per Game in Seconds">
+                    Duration
+                </span>
+            </th>
             <th>Wins</th>
-            <th class="is-hidden-mobile">Tie</th>
+            <th class="is-hidden-mobile">
+                <span class="has-tooltip-arrow" data-tooltip="Total Ties and Game Timeouts">
+                    Tie
+                </span>
+            </th>
             <th class="is-hidden-mobile">Losses</th>
         </tr>
         </thead>
         <tbody>
         {% for submission in submissions %}
             <tr>
-                <td><strong>{{ submission['rank'] }}</strong></td>
+                <td class="has-text-centered">
+                    {% if submission['rank'] <= 3 %}
+                        <span class="fa-stack is-size-7">
+                            <i class="fa fa-trophy fa-stack-2x has-text-{{ ['success', 'warning', 'danger'][submission['rank'] - 1] }}"></i>
+                            <span class="fa fa-stack-1x" style="line-height: 1.5em;">
+                                <strong class="has-text-{{ 'black' if submission['rank'] == 2 else 'white' }}">{{ submission['rank'] }}</strong>
+                            </span>
+                        </span> 
+                    {% else %}
+                        <strong>{{ submission['rank'] }}</strong>
+                    {% endif %}
+                    
+                </td>
                 <td>{{ submission['username'] }} ({{ submission['fullname'] }})</td>
-                <td class="is-hidden-mobile">{{ submission['submissions'] }}</td>
+                <td class="is-hidden-touch">{{ submission['submissions'] }}</td>
+                <td class="is-hidden-mobile">{{ "%.2f"|format(submission['avg_duration']) }}</td>
                 <td><span class="tag is-success">{{ submission['wins'] }}</span></td>
                 <td class="is-hidden-mobile"><span class="tag is-warning">{{ submission['ties'] }}</span></td>
                 <td class="is-hidden-mobile"><span class="tag is-danger">{{ submission['loss'] }}</span></td>

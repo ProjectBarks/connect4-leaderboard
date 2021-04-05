@@ -43,6 +43,8 @@ class MinimaxAgent(object):
 - [ ] **Add Match Cache** - When recomputing the matches check which users have increased their submission count and only
                             redo matches for those players. This would not dramatically decrease computation but could be
                             substantial in cases where only one or two players are modifying their code between execution. 
+- [ ] **Containerize Players** - Divide players into independent docker containers. It is possible to manipulate the shadow agent
+                                 to falsify results and unfairly share time/memory. Separating containers would further equalize play.
 - [ ] **Dojo** - Allow players who submit their code to run in a 1v1 fashion playing back the results in realtime with a
                  dramatic effect. It could also permit benchmarking against competitive agents before a total re-computation.
 - [ ] **Hash Passcodes** - The fact passcodes are not encrypted right now is a huge security risk. All passcodes
